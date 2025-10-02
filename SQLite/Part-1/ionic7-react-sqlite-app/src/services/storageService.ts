@@ -1,10 +1,11 @@
-import {platform} from '../App';
+import { platform } from '../App';
 import { BehaviorSubject } from 'rxjs';
-import {ISQLiteService } from '../services/sqliteService'; 
-import {IDbVersionService } from '../services/dbVersionService';
+import { ISQLiteService } from '../services/sqliteService';
+import { IDbVersionService } from '../services/dbVersionService';
 import { SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { UserUpgradeStatements } from '../upgrades/user.upgrade.statements';
 import { User } from '../models/User';
+import { Capacitor } from '@capacitor/core';
 
 export interface IStorageService {
     initializeDatabase(): Promise<void>
@@ -15,6 +16,19 @@ export interface IStorageService {
     getDatabaseName(): string
     getDatabaseVersion(): number
 };
+
+const logWithTimestamp = (message: string, data?: any) => {
+  const timestamp = new Date().toISOString();
+  const currentPlatform = Capacitor.getPlatform();
+  const logMessage = `[${timestamp}] [StorageService] [${currentPlatform.toUpperCase()}] ${message}`;
+
+  if (data) {
+    console.log(logMessage, data);
+  } else {
+    console.log(logMessage);
+  }
+};
+
 class StorageService implements IStorageService  {
     versionUpgrades = UserUpgradeStatements;
     loadToVersion = UserUpgradeStatements[UserUpgradeStatements.length-1].toVersion;
@@ -53,6 +67,10 @@ class StorageService implements IStorageService  {
             }
             this.isInitCompleted.next(true);
         } catch(error: any) {
+            logWithTimestamp("initializeDatabase failed", {
+                error: error.message || error,
+                stack: error?.stack,
+            });
             const msg = error.message ? error.message : error;
             throw new Error(`storageService.initializeDatabase: ${msg}`);
         }
